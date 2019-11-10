@@ -77,7 +77,7 @@ def open_csv_file_as_dataframe(filename):
 def get_first_row_of_all_csv_files_in_a_list(file_list):
     output_list = []
     for file_name in file_list:
-        with open(file_name, 'r',encoding="utf8") as f:
+        with open(file_name, 'r') as f:
             first_line = f.readline()
             first_line = first_line.replace('"', ''). \
                 replace('\n', '').replace('\r', '').split(',')
@@ -110,6 +110,44 @@ def get_intersection_columns_for_different_csv_files(output_dict):
             column_list.append(k)
     return column_list
 
+"""
+    Create dictionary out of the files 
+"""
+import numpy as np
+def get_tweets(tweet_files):
+
+    mapping = {}
+    id_col = 'user_id'
+    tweet_col = 'text'
+
+    for file in tweet_files:
+        print(file)
+        df = pd.read_csv(file)
+        print(list(df))
+        df = df[[id_col, tweet_col]]
+        df[tweet_col].fillna( "", inplace= True)
+        #print(df.text)
+        for index, content in df.iterrows():
+            # print(content)
+            if not content[tweet_col]:
+                continue
+            id = content[id_col]
+            if id not in mapping:
+                mapping[id] = ""
+                mapping[id] = content[tweet_col]
+            else:
+                mapping[id] += " "+content[tweet_col]
+
+    return mapping
+
+
+"""
+    merge the tweets with the columns
+"""
+
+def merge_tweets_with_user(user_df, tweets):
+    user_df['tweet'] = user_df.id.map(lambda x: tweets[ int(x)].lower() if int(x) in tweets  else "" )
+    return user_df
 
 if __name__ == "__main__":
     file_list = human_users+fake_users
@@ -117,4 +155,14 @@ if __name__ == "__main__":
     column_list = get_intersection_columns_for_different_csv_files(checkdata)
     df = extract_columns_from_multiple_csvs(column_list,
                                             file_list)
+    """
+        merge tweets 
+    """
+    tweets = get_tweets( human_tweets+fake_tweets)
+    user_df = merge_tweets_with_user(df, tweets)
+
+    """
+        save the files
+    """
     df.to_csv('data/training_users.csv')
+    user_df.to_csv('data/training_user_tweet.csv', index = False)
