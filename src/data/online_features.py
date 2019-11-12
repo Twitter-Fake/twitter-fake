@@ -1,14 +1,14 @@
 """
     This function get all the featueres to online processing.
 """
-
 import re
 import nltk
 nltk.download('stopwords')
 from nltk.corpus import stopwords
 import pandas as pd
 
-
+from gensim.corpora.dictionary import Dictionary
+from gensim.models.ldamodel import LdaModel
 """
     Common text processing functionalities.
 """
@@ -61,6 +61,9 @@ def fill_lda_result(df, lda_model, dictionary, topic_count):
 """
 def topic_model(df_train, df_test, topic_count = 10):    
     ## general remove text
+    df_train['tweet'] = df_train['tweet'].fillna("")
+    df_test['tweet'] = df_test['tweet'].fillna("")
+
     df_train['tweet'] = df_train['tweet'].map(general_text_processing)
     df_test['tweet'] = df_test['tweet'].map(general_text_processing)
 
@@ -69,8 +72,6 @@ def topic_model(df_train, df_test, topic_count = 10):
     df_test['tweet'] = df_test['tweet'].map(remove_stop_words)
 
     ## gensim lda
-    from gensim.corpora.dictionary import Dictionary
-    from gensim.models.ldamodel import LdaModel
     dictionary = Dictionary()
     for t in df_train.tweet.values.tolist():
         #print(t)
@@ -82,7 +83,9 @@ def topic_model(df_train, df_test, topic_count = 10):
     train_doc2_corupus = [dictionary.doc2bow(text.split()) for 
         text in df_train['tweet'].values.tolist()]
     #print(train_doc2_corupus)
-    lda_model = LdaModel(train_doc2_corupus, num_topics = topic_count)
+    print("Started LDA")
+    lda_model = LdaModel(train_doc2_corupus, num_topics = topic_count, iterations = 30 )
+    print("Completed LDA")
     
 
     """
@@ -97,6 +100,7 @@ def topic_model(df_train, df_test, topic_count = 10):
     """
     return 
     """
+    print('LDA Completed')
     return df_train, df_test
 
 """
@@ -159,7 +163,7 @@ if __name__ == "__main__":
     """
         Test lda
     """
-    test_src = 'data/training_user_tweet.csv'
+    test_src = '../data/training_user_tweet.csv'
     df = pd.read_csv(test_src)
     df.tweet.fillna("", inplace = True)
     n_limt = int(df.shape[0]*0.8)
@@ -172,10 +176,10 @@ if __name__ == "__main__":
 
 
 
-    print("################ test glove ###### ")
-    glove_file = '/media/shibin/disk/glove/glove.twitter.27B/glove.twitter.27B.25d.txt'
-    glove_df = glove_encode(df_test, glove_file, 25 )
-    print(list(glove_df))
+    # print("################ test glove ###### ")
+    # glove_file = '/media/shibin/disk/glove/glove.twitter.27B/glove.twitter.27B.25d.txt'
+    # glove_df = glove_encode(df_test, glove_file, 25 )
+    # print(list(glove_df))
 
 
 
