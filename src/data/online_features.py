@@ -55,11 +55,18 @@ def fill_lda_result(df, lda_model, dictionary, topic_count):
     
 
 
-
+import os
 """
     Topic modeling features.
+    pass cached = False incase you don't want to used earlier data split.
 """
-def topic_model(df_train, df_test, topic_count = 10):    
+def topic_model(df_train, df_test, topic_count = 10, cached = True):
+    lda_train_save_file = '../data/lsa_train.csv'
+    lda_test_save_file = '../data/lsa_test.csv'
+
+    if( os.path.exists(lda_train_save_file) and cached):
+        pd.read_csv(lda_train_save_file), pd.read_csv(lda_test_save_file)    
+
     ## general remove text
     df_train['tweet'] = df_train['tweet'].fillna("")
     df_test['tweet'] = df_test['tweet'].fillna("")
@@ -97,6 +104,12 @@ def topic_model(df_train, df_test, topic_count = 10):
         topic_count)
     
 
+    """ 
+        Save the file
+    """
+
+    df_train.to_csv(lda_train_save_file, index = False)
+    df_test.to_csv(lda_test_save_file, index = False)
     """
     return 
     """
@@ -170,6 +183,8 @@ if __name__ == "__main__":
     df_train = df[0:n_limt]
     df_test = df[n_limt:]
     df_train, df_test = topic_model(df_train, df_test)
+
+
     print("######## test LDA  #####")
     print(list(df_train))
     print(list(df_test))
