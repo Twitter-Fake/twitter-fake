@@ -14,9 +14,10 @@ from gensim.models.ldamodel import LdaModel
 """
 def general_text_processing(data):
 
-    regex_list = [('\S*@\S*\s?', ''), 
-        ('\s+', ' '),
-        ("\'", "")
+    regex_list = [('\\S*@\\S*\\s?', ''), 
+        ('\\s+', ' '),
+        ("\\'", ""),
+        ("\\d+","")
     ]
 
     for regex_text in regex_list:
@@ -25,9 +26,14 @@ def general_text_processing(data):
 """
     Remove stopwords
 """
+stop_words = set(stopwords.words('english'))
+
 def remove_stop_words(text):
-    stop_words = set(stopwords.words('english'))
-    valid_words = [x for x in re.findall(r"[\w]+", text) if x not in stop_words]
+    valid_words = [x for x in re.split('^[a-zA-Z]', text) if x not in stop_words]
+    valid_words = [ x for x in valid_words if len(x)!=0 ]
+    ### Empty
+    if(len(valid_words) == 0):
+        return ""
     return " ".join(valid_words)
     
 """
