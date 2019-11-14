@@ -67,8 +67,8 @@ def clean_tweet(text):
     words = [w for w in words if len(w) > 2]  
     words = [w.lower() for w in words]
     words = [w for w in words if w not in stop_words]
-    ret = ' '.join(words)
-    return ret
+    #ret = ' '.join(words)
+    return words
 """
     Remove stopwords
 """
@@ -104,6 +104,25 @@ def fill_lda_result(df, lda_model, dictionary, topic_count):
     return df
     
 
+def fill_lda_result_2(df, lda_model, dictionary, topic_count):
+    values = df['tweet'].values.tolist()
+    doc2_corupus = [dictionary.doc2bow(text) for 
+        text in values]
+    predicted_values = [lda_model[vec] for vec in doc2_corupus]
+    """
+        append to column
+    """
+    for i in range(len(predicted_values)):
+        temp = [ 0 for x in range(topic_count)]
+        for ele in predicted_values[i]:
+            temp[ele[0]] = ele[1]
+        predicted_values[i] = temp
+    
+    for index in range(topic_count):
+        col_name = "topic_" + str(index)
+        df[col_name] = [x[index] for x in predicted_values]
+    
+    return df
 
 import os
 """
@@ -138,16 +157,26 @@ def topic_model(df_train, df_test, topic_count = 10, cached = True):
     # df_test['tweet'] = df_test['tweet'].map(remove_stop_words)
 
     ## gensim lda
+    # dictionary = Dictionary()
+    # for t in df_train.tweet.values.tolist():
+    #     #print(t)
+    #     dictionary.add_documents([t.split()]) 
+
+    
     dictionary = Dictionary()
     for t in df_train.tweet.values.tolist():
         #print(t)
-        dictionary.add_documents([t.split()]) 
+        dictionary.add_documents([t]) 
     #for  t in df_test['tweet'].values.tolist() :
         #print(t)
         # print(t[0].split())
         #print(dictionary.doc2bow(t.split()))
-    train_doc2_corupus = [dictionary.doc2bow(text.split()) for 
-        text in df_train['tweet'].values.tolist()]
+
+
+    train_doc2_corupus = [dictionary.doc2bow(text) for text in df_train['tweet'].values.tolist()]
+
+    # train_doc2_corupus = [dictionary.doc2bow(text.split()) for 
+        # text in df_train['tweet'].values.tolist()]
     #print(train_doc2_corupus)
     print("Started LDA")
     lda_model = LdaModel(train_doc2_corupus, num_topics = topic_count, iterations = 30 )
@@ -157,9 +186,9 @@ def topic_model(df_train, df_test, topic_count = 10, cached = True):
     """
     fill topics
     """
-    df_test = fill_lda_result(df_test, lda_model, dictionary,
+    df_test = fill_lda_result_2(df_test, lda_model, dictionary,
         topic_count )
-    df_train = fill_lda_result(df_train, lda_model, dictionary,
+    df_train = fill_lda_result_2(df_train, lda_model, dictionary,
         topic_count)
     
 
