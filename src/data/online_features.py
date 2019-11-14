@@ -23,11 +23,55 @@ def general_text_processing(data):
     for regex_text in regex_list:
         data = re.sub(regex_text[0], regex_text[1], data)
     return data
+
+"""
+    Parallelize stopwords
+"""
+import multiprocessing as mp# cpu_count, Parallel, Pool
+import numpy as np
+ 
+cores = mp.cpu_count() #Number of CPU cores on your system
+partitions = cores #Define as many partitions as you want
+
+def get_split(data, n):
+    size = data.shape[0]
+    ret = []
+    k = int((size+n)/n)
+    for i in range(1,size+1):
+        ret.append(data[(i-1)*k: min(size, i* k) ])
+    return ret
+
+
+
+def parallelize(data, func):
+    data_split = get_split(data, cores)
+    pool = mp.Pool(cores)
+    data = pd.concat(pool.map(func, data_split))
+    pool.close()
+    pool.join()
+    return data
+stop_words = set(stopwords.words('english'))
+
+"""
+clean tweet function.
+Standard refered from the website.
+"""
+def clean_tweet(text):
+    #Create a string form of our list of text
+    global stop_words
+    raw_string = ''.join(text)
+    no_links = re.sub(r'http\S+', '', raw_string)
+    no_unicode = re.sub(r"\\[a-z][a-z]?[0-9]+", '', no_links)
+    no_special_characters = re.sub('[^A-Za-z ]+', '', no_unicode)
+    words = no_special_characters.split(" ")
+    words = [w for w in words if len(w) > 2]  
+    words = [w.lower() for w in words]
+    words = [w for w in words if w not in stop_words]
+    ret = ' '.join(words)
+    return ret
 """
     Remove stopwords
 """
-stop_words = set(stopwords.words('english'))
-
 def remove_stop_words(text):
     valid_words = [x for x in re.split('^[a-zA-Z]', text) if x not in stop_words]
     valid_words = [ x for x in valid_words if len(x)!=0 ]
@@ -77,12 +121,21 @@ def topic_model(df_train, df_test, topic_count = 10, cached = True):
     df_train['tweet'] = df_train['tweet'].fillna("")
     df_test['tweet'] = df_test['tweet'].fillna("")
 
-    df_train['tweet'] = df_train['tweet'].map(general_text_processing)
-    df_test['tweet'] = df_test['tweet'].map(general_text_processing)
+    #df_train['tweet'] = df_train['tweet'].map(general_text_processing)
+    #df_test['tweet'] = df_test['tweet'].map(general_text_processing)
+    """
+        Parallel tweet.
+    """
+    # df_test['tweet'] = parallelize(df_test, clean_tweet)
+    # df_train['tweet'] = parallelize(df_train, clean_tweet)
+
+
+    df_train['tweet'] = df_train['tweet'].map(clean_tweet)
+    df_test['tweet'] = df_test['tweet'].map(clean_tweet)
 
     ## remove stop words
-    df_train['tweet'] = df_train['tweet'].map(remove_stop_words)
-    df_test['tweet'] = df_test['tweet'].map(remove_stop_words)
+    # df_train['tweet'] = df_train['tweet'].map(remove_stop_words)
+    # df_test['tweet'] = df_test['tweet'].map(remove_stop_words)
 
     ## gensim lda
     dictionary = Dictionary()
@@ -188,7 +241,7 @@ if __name__ == "__main__":
     n_limt = int(df.shape[0]*0.8)
     df_train = df[0:n_limt]
     df_test = df[n_limt:]
-    df_train, df_test = topic_model(df_train, df_test)
+    df_train, df_test = topic_model(df_train, df_test, topic_count = 20)
 
 
     print("######## test LDA  #####")
