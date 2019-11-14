@@ -1,4 +1,24 @@
 
+
+
+"""
+    You should create a file named "tweet_conf.json" in the same directory to this code to work. 
+    Template is as shown in below.
+
+    {
+    "consumer_key": "*********************************",
+    "consumer_secret": "*************************************", 
+    "access_key": "*******************************************",
+    "access_secret": "***************************************"
+    }
+
+    These information can be generated from the twitter developer page.
+
+
+
+"""
+
+
 import tweepy
 import json
 """[summary]
