@@ -78,9 +78,16 @@ def get_user_info(id):
     auth = autheniticate()
     api = tweepy.API(auth, wait_on_rate_limit = True )
 
-    number_of_tweets=200
-    tweets = api.user_timeline(id = id)
- 
+    tweets = []
+    """
+    Catch the permission on tweet reading
+    """
+    try:
+        number_of_tweets=200
+        tweets = api.user_timeline(id = id)
+    except Exception:
+        pass 
+
     user_obj = api.get_user(id=id)
     user_dict = get_dict(user_obj)
     user_dict['tweet'] = ""
@@ -144,7 +151,7 @@ def download_all(input_file, out_put_file):
                         working_list = []
                 except Exception as e:
                     err += 1
-                    if(err % 10 == 0):
+                    if(err % 50 == 0):
                         print('Error count= {}, reason = {}, id = {}'.format(err, e, row[0]))
                     pass
 
