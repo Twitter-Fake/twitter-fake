@@ -152,15 +152,21 @@ import os
 
 
 def topic_model(df_train, df_test, topic_count=10, cached=True):
+
+    
     lda_train_save_file = '../data/lsa_train.csv'
     lda_test_save_file = '../data/lsa_test.csv'
 
     if (os.path.exists(lda_train_save_file) and cached):
         pd.read_csv(lda_train_save_file), pd.read_csv(lda_test_save_file)
 
+    ### cleanup
+    #parallel_proces(test_src,'../data/training_user_tweet_processed.csv')
+
+
         ## general remove text
-    df_train['tweet'] = df_train['tweet'].fillna("")
-    df_test['tweet'] = df_test['tweet'].fillna("")
+    #df_train['tweet'] = df_train['tweet'].fillna("")
+    #df_test['tweet'] = df_test['tweet'].fillna("")
 
     # df_train['tweet'] = df_train['tweet'].map(general_text_processing)
     # df_test['tweet'] = df_test['tweet'].map(general_text_processing)
@@ -170,8 +176,8 @@ def topic_model(df_train, df_test, topic_count=10, cached=True):
     # df_test['tweet'] = parallelize(df_test, clean_tweet)
     # df_train['tweet'] = parallelize(df_train, clean_tweet)
 
-    df_train['tweet'] = df_train['tweet'].map(clean_tweet)
-    df_test['tweet'] = df_test['tweet'].map(clean_tweet)
+    #df_train['tweet'] = df_train['tweet'].map(clean_tweet)
+    #df_test['tweet'] = df_test['tweet'].map(clean_tweet)
 
     ## remove stop words
     # df_train['tweet'] = df_train['tweet'].map(remove_stop_words)
@@ -279,23 +285,24 @@ def glove_encode(df, glove_file, dims=27):
 
 
 def text_process_split(input):
-    input_file, start, end = input
+    input_file, start, end, out_folder = input
+    out_file = os.path.join(out_folder, 'part-{}.csv'.format(start))
     df = pd.read_csv(input_file)
     df = df[start:end]
     df['tweet'] = df.tweet.map(clean_tweet)
-    df.to_csv('../data/part-{}.csv'.format(start))
+    df.to_csv(out_file)
     return True
 
 
-def parallel_proces(input_file, out_file):
+def parallel_proces(input_file, out_folder):
     df = pd.read_csv(input_file)
     size = df.shape[0]
 
     splits = []
-    cores = mp.cpu_count()//3
+    cores = mp.cpu_count()//2
     bucket = int(size / cores)
     for i in range(1, cores + 1):
-        splits.append((input_file, (i - 1) * bucket, min(i * bucket, size)))
+        splits.append((input_file, (i - 1) * bucket, min(i * bucket, size), out_folder))
     print(splits)
     pool = mp.Pool(processes=cores)
     result = None
@@ -313,23 +320,72 @@ def parallel_proces(input_file, out_file):
     #result.to_csv(out_file)
 
 
+def process_df(df, temp_folder):
+    os.mkdir(temp_folder)
+    temp_df_file = os.path.join(temp_folder, 'temp.csv')
+    df.to_csv(temp_df_file)
+
+    ## parrallel
+    parallel_proces(temp_df_file, temp_folder)
+
+    ## read all files
+    result_df = pd.DataFrame()
+    
+    for file in os.listdir(temp_folder):
+        if 'part-' in file:
+            file = os.path.join(temp_folder, file)
+
+            if(result_df.shape[0] == 0):
+                result_df = pd.read_csv(file)
+            else:
+                result_df = pd.concat([result_df, pd.read_csv(file)])
+    
+    return result_df
+
+
+
+"""
+    LDA parallel
+"""
+import shutil
+def lda_parallel(df_train, df_test,  topic_count):
+    temp_folder = '../data/temp'
+
+    if os.path.exists(temp_folder):
+        shutil.rmtree(temp_folder)
+    ## mkdir
+    os.mkdir(temp_folder)
+    
+
+    ## make all dir
+    test_folder = os.path.join(temp_folder, 'test')
+    train_folder = os.path.join(temp_folder, 'train')
+
+    df_test = process_df(df_test, test_folder)
+    df_train = process_df(df_train, train_folder)
+
+    df_train, df_test = topic_model(df_train, df_test, topic_count=20)
+    return df_train, df_test
+
+
+
 if __name__ == "__main__":
     """
         Test lda
     """
     test_src = '../data/training_user_tweet.csv'
-    parallel_proces(test_src,'../data/training_user_tweet_processed.csv')
+    #parallel_proces(test_src,'../data/training_user_tweet_processed.csv')
 
-    # df = pd.read_csv(test_src)
+    df = pd.read_csv(test_src)
     # df.tweet.fillna("", inplace=True)
-    # n_limt = int(df.shape[0] * 0.8)
-    # df_train = df[0:n_limt]
-    # df_test = df[n_limt:]
-    # df_train, df_test = topic_model(df_train, df_test, topic_count=20)
+    n_limt = int(df.shape[0] * 0.8)
+    df_train = df[0:n_limt]
+    df_test = df[n_limt:]
+    df_train, df_test = lda_parallel(df_train, df_test, topic_count=20)
     #
-    # print("######## test LDA  #####")
-    # print(list(df_train))
-    # print(list(df_test))
+    print("######## test LDA  #####")
+    print(list(df_train))
+    print(list(df_test))
 
     # print("################ test glove ###### ")
     # glove_file = '/media/shibin/disk/glove/glove.twitter.27B/glove.twitter.27B.25d.txt'
