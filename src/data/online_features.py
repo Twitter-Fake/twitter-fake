@@ -69,6 +69,9 @@ def clean_tweet(text):
     words = [w for w in words if w not in stop_words]
     #ret = ' '.join(words)
     return words
+
+
+
 """
     Remove stopwords
 """
@@ -259,6 +262,38 @@ def glove_encode(df, glove_file, dims = 27):
 
     return df
 
+
+def text_process_split(input):
+    input_file, start, end = input
+    df = pd.read_csv(input_file)
+    df = df[start:end]
+    df['tweet'] = df.tweet.applymap(clean_tweet)
+    return df 
+
+
+def parallel_proces(input_file, out_file):
+
+    df = pd.read_csv(input_file)
+    size = df.shape[0]
+
+    splits = []
+    cores = mp.cpu_count()
+    bucket = int(size/ cores)
+    for i in range(1,cores+1):
+        splits.append( ( input_file, (i-1)*bucket, min( i * bucket, size) ) )
+    pool = mp.Pool( processes = cores )
+    result = None
+
+    """
+        multi process and concat
+    """
+    for res in mp.imap_unordered( text_process_split, splits  ):
+        if result == None:
+            result = res
+        else:
+            result = pd.concat([result, res])
+    
+    result.to_csv(out_file)
 
 if __name__ == "__main__":
     """
