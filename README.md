@@ -29,3 +29,31 @@ We then used several classifiers , trained them with the user data and with the 
 
 
 ## Result
+
+
+
+
+## Run the code
+* Requirements are provided in the requirement.txt
+* Run setup.sh for path settings.
+
+## Pre-processing
+We expect the data to be present in the external data folder. You can download from http://mib.projects.iit.cnr.it/dataset.html
+* cd src
+* Pre-processing: python data/load_train_data.py.
+* Download external data: python data/tweet_downloader.py <csv_in_folder>.
+* * model/util.py contains helper function to assist the process.
+* * Download account ids from https://botometer.iuni.iu.edu/bot-repository/datasets.html
+* * Download any number of csv and add to single folder.
+* * Use developer account to create twitter credential. You should create tweet_conf.json file inside data folder with those details. Please find the structure in tweet_downloader.py(in comments)
+## Features
+* Additional features:
+* * All the additional features like LDA, glove, TF-IDF are computed online. You can call respective function with dataset split to concat the feature.
+
+## Models
+* Model files can be run independtly. Please change the output folder in the file to your locations
+* * Logistic Regression: baseline_model_LR.py
+* * SVM: tfidf_svm.py
+* * XGB : xgb_model.py
+* * Deep Neural Network:  BERT_Notebook.ipynb.
+  
