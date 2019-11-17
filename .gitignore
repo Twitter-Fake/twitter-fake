@@ -106,3 +106,4 @@ venv.bak/
 /data/*
 *.json
 src/nohup.out
+*.csv
