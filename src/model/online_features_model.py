@@ -12,7 +12,7 @@ import os
 from gensim.corpora.dictionary import Dictionary
 from gensim.models.ldamodel import LdaModel
 
-from bert_embedding import BertEmbedding
+from bert_serving.client import BertClient
 """
     Common text processing functionalities.
 """
@@ -164,41 +164,28 @@ def glove_encode(df, glove_file, dims = 27):
     
 def bert_encode(df, dims=768, bert_csv_path='../data/bert.csv'):
 
-    if not os.path.exists(bert_csv_path):
-        if 'tweet' not in df.columns:
-            return
+    bc = BertClient()
 
-        bert_embedding = BertEmbedding()
-        
-        tweets = df['tweet'].values.tolist()
-        mappings = []
-        
-        for t in tweets:
-            tweet = [""]
-            if not pd.isnull(t):
-                tweet[0] = str(t)
-            
-            embeddings = bert_embedding(tweet)
+    '''
+        process null values
+    '''
+    df['tweet'] = df.tweet.fillna('_')
+    tweets = df['tweet'].values.tolist()
 
-            final_embedding = np.zeros(768)
-            count = 1
-            for embedding in embeddings[0][1]:
-                final_embedding += embedding
-                count += 1
+    '''
+        call service for bert embeddings
+    '''
+    bert_embeddings = bc.encode(tweets)
 
-            mappings.append(final_embedding / count)
-            print(len(mappings))
-        
-        np.savetxt(bert_csv_path, np.array(mappings), delimiter=",")
-
-    """
-        append dataframe
-    """
-    mappings = np.loadtxt(bert_csv_path, delimiter=',', dtype=np.float32)
     for i in range(dims):
         col_name = 'bert_' + str(i)
-        df[col_name] = [ x[i] for x in mappings]
+        df[col_name] = [x[i] for x in bert_embeddings]
     
+    '''
+        save df
+    '''
+    df.to_csv(bert_csv_path)
+
     return df
 
 

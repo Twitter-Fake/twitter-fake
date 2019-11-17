@@ -5,8 +5,9 @@ from sklearn.model_selection import train_test_split
 data_no_additional_feature = '../data/training_users.csv'
 data_with_tweet_csv = '../data/training_user_tweet.csv'
 data_with_lsa = ''
-from data import online_features
+import online_features_model
 import numpy as np
+import os
 """
   Remove the field with objects
 """
@@ -75,16 +76,33 @@ def get_dataset(data_type='none'):
             train_x, test_x = online_features.lda_parallel(train_df, test_df, topic_count=20, cache = False)
             return train_x, test_x
     elif data_type == 'bert':
-        data = pd.read_csv(data_with_tweet_csv)
-        online_features.bert_encode(data)
-
+        data = None
+        if not os.path.exists('../data/bert.csv'):
+            data = online_features_model.bert_encode(pd.read_csv(data_with_tweet_csv))
+        else:
+            data = pd.read_csv('../data/bert.csv')
         data = remap_fields(data)
+        print(data.sample(2)) # with bert
 
-        train_x, test_x, _, _ = train_test_split(data, data.label,  stratify =data.label)
+        '''
+            normalize data
+        '''
+        normalized_data = data.copy()
+        for i in range(768):
+            col_name = 'bert_' + str(i)
+            max_col_val = data[col_name].max()
+            min_col_val = data[col_name].min()
+
+            normalized_data[col_name] = (data[col_name] - min_col_val) / (max_col_val - min_col_val)
+        
+        '''
+            create test and train split
+        '''
+        train_x, test_x, _, _ = train_test_split(normalized_data, normalized_data.label,  stratify =normalized_data.label)
         train_y = train_x.label
         test_y = test_x.label
 
-        train_x.drop(['label', 'id', 'tweet', 'verified'], axis = 1, inplace = True)
-        test_x.drop(['label', 'id', 'tweet', 'verified'], axis = 1, inplace = True)
+        train_x.drop(['Unnamed: 0', 'label', 'id', 'tweet', 'verified'], axis = 1, inplace = True)
+        test_x.drop(['Unnamed: 0', 'label', 'id', 'tweet', 'verified'], axis = 1, inplace = True)
 
         return train_x, train_y, test_x, test_y

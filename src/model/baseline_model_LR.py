@@ -23,20 +23,3 @@ score = accuracy_score(y_test,predictions)
 print(score)
 print(classification_report(y_test,predictions))
 
-# dtrain = xgb.DMatrix(X_train, label=y_train)
-# dtest = xgb.DMatrix(X_test, label=y_test)
-#
-# param = {
-#     'max_depth': 4,  # the maximum depth of each tree
-#     'eta': 0.3,  # the training step for each iteration
-#     'silent': 0,  # logging mode - quiet
-#     'objective': 'binary:logistic',  # error evaluation for multiclass training
-#     }  # the number of classes that exist in this datset
-# num_round = 20  # the number of training iterations
-#
-# bst = xgb.train(param, dtrain, num_round)
-#
-# preds = bst.predict(dtest)
-# best_preds = np.asarray([np.argmax(line) for line in preds])
-# print(accuracy_score(y_test,best_preds))
-

@@ -108,3 +108,4 @@ venv.bak/
 src/nohup.out
 src/all_xgb_lda_cv
 src/all_xgb_none_cv
+*.csv
