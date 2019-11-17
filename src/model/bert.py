@@ -35,10 +35,11 @@ def build_model(input_dim=768):
 if __name__ == "__main__":
     train_x, train_y, test_x, test_y = get_dataset('bert')
 
-    # print(train_x[0])
     # print(train_x.shape, train_y.shape)
-    print(train_x.sample(1))
-    print(train_y.sample(5))
+
+    '''
+        build neural network model
+    '''
     model = build_model(input_dim=train_x.shape[1])
     model.summary()
 
