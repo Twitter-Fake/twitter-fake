@@ -46,14 +46,24 @@ def get_dataset(data_type='none'):
             data = online_features_model.bert_encode(pd.read_csv(data_with_tweet_csv))
         else:
             data = pd.read_csv('../data/bert.csv')
-
+        data = remap_fields(data)
         print(data.sample(2)) # with bert
+
+        '''
+            normalize data
+        '''
+        normalized_data = data.copy()
+        for i in range(768):
+            col_name = 'bert_' + str(i)
+            max_col_val = data[col_name].max()
+            min_col_val = data[col_name].min()
+
+            normalized_data[col_name] = (data[col_name] - min_col_val) / (max_col_val - min_col_val)
         
         '''
             create test and train split
         '''
-        data = remap_fields(data)
-        train_x, test_x, _, _ = train_test_split(data, data.label,  stratify =data.label)
+        train_x, test_x, _, _ = train_test_split(normalized_data, normalized_data.label,  stratify =normalized_data.label)
         train_y = train_x.label
         test_y = test_x.label
 
