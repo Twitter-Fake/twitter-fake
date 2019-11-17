@@ -23,7 +23,7 @@ def remap_fields(df):
 """
     get unified function get dataset
 """
-
+from sklearn.model_selection import  StratifiedKFold
 def get_dataset(data_type='none'):
 
     if data_type == 'none':
@@ -31,6 +31,27 @@ def get_dataset(data_type='none'):
         data = remap_fields(data)
         train_x, test_x, _, _ = train_test_split(data, data.label,  stratify =data.label)
         return train_x, test_x
+
+    elif data_type == 'none_cv':
+        data = pd.read_csv(data_with_tweet_csv)
+        strat = StratifiedKFold(n_splits =  5)
+        for train_index, test_index in strat.split(data, data.label):
+            data = pd.read_csv(data_with_tweet_csv)
+            train_x, test_x = data.iloc[train_index], data.iloc[test_index]
+            #train_x, test_x = online_features.lda_parallel(train_x, test_x, topic_count=20, cache = False)
+            train_x = remap_fields(train_x)
+            test_x = remap_fields(test_x)
+            yield  train_x, test_x
+    elif data_type == 'lda_cv':
+        data = pd.read_csv(data_with_tweet_csv)
+        strat = StratifiedKFold(n_splits =  5)
+        for train_index, test_index in strat.split(data, data.label):
+            data = pd.read_csv(data_with_tweet_csv)
+            train_x, test_x = data.iloc[train_index], data.iloc[test_index]
+            train_x, test_x = online_features.lda_parallel(train_x, test_x, topic_count=20, cache = False)
+            train_x = remap_fields(train_x)
+            test_x = remap_fields(test_x)
+            yield  train_x, test_x
     elif data_type == 'lda':
         data = pd.read_csv(data_with_tweet_csv)
         train_x, test_x, _, _ = train_test_split(data, data.label,  stratify =data.label)
@@ -39,6 +60,20 @@ def get_dataset(data_type='none'):
         train_x = remap_fields(train_x)
         test_x = remap_fields(test_x)
         return train_x, test_x
+
+    elif data_type == 'lda_new':
+        data = pd.read_csv(data_with_tweet_csv)
+        train_x, test_x, _, _ = train_test_split(data, data.label,  stratify =data.label)
+
+        train_x , test_x= online_features.lda_parallel(train_x, test_x, topic_count = 20 )
+        train_x = remap_fields(train_x)
+        test_x = remap_fields(test_x)
+        return train_x, test_x
+    elif data_type == 'lda_cmb':
+            train_df = pd.read_csv(data_with_tweet_csv)
+            test_df = pd.read_csv('../data/new_data.csv')
+            train_x, test_x = online_features.lda_parallel(train_df, test_df, topic_count=20, cache = False)
+            return train_x, test_x
     elif data_type == 'bert':
         data = pd.read_csv(data_with_tweet_csv)
         online_features.bert_encode(data)
@@ -53,6 +88,3 @@ def get_dataset(data_type='none'):
         test_x.drop(['label', 'id', 'tweet', 'verified'], axis = 1, inplace = True)
 
         return train_x, train_y, test_x, test_y
-
-
-
