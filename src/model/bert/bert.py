@@ -7,11 +7,11 @@ from keras.models import Model
 from keras import backend as K
 
 def recall_m(y_true, y_pred):
+
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
     recall = true_positives / (possible_positives + K.epsilon())
     return recall
-
 def precision_m(y_true, y_pred):
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
@@ -52,17 +52,28 @@ def build_model(bert_dim=768, profile_dim=32):
     
 
 if __name__ == "__main__":
-    '''
-        get data with bert embeddings
-    '''
-    train_x, train_y, test_x, test_y = get_dataset('bert')
+    cross_val = None
 
-    '''
-        build neural network model
-    '''
-    model = build_model()
-    model.summary()
+    for i in range(5):
+        '''
+            get data with bert embeddings
+        '''
+        train_x, train_y, test_x, test_y = get_dataset('bert')
 
-    model.fit(x=np.hsplit(train_x, np.array([32, 800]))[:2], y=train_y, batch_size=32, validation_split=0.1, shuffle=True, epochs=100)
-    model.save('bert_sent_parallel.h5')
-    print(model.evaluate(np.hsplit(test_x, 32), test_y))
+        '''
+            build neural network model
+        '''
+        model = build_model()
+        model.summary()
+
+        train_split = np.hsplit(train_x, np.array([32, 800]))[:2]
+        test_split = np.hsplit(test_x, np.array([32, 800]))[:2]
+        model.fit(x=train_split, y=train_y, batch_size=32, shuffle=True, epochs=100)
+
+        if cross_val == None:
+            cross_val = model.evaluate(test_split, test_y)
+        else:
+            cross_val += model.evaluate(test_split, test_y)
+    
+    print([metric/5 for metric in cross_val])
+    model.save('bert_sent_parallel_cross_val.h5')
