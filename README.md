@@ -30,7 +30,7 @@ We then used several classifiers , trained them with the user data and with the 
 
 ## Result
 
-
+The tabulated results are present in the README.docx file pushed seperately.
 
 
 ## Code Details
