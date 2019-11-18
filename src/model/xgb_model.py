@@ -1,6 +1,20 @@
 from xgboost import XGBClassifier
 from util import get_dataset
 from sklearn.metrics import classification_report 
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import make_scorer, accuracy_score
+
+def rf_grid_search(X,Y):
+    param_grid = [
+        {'n_estimators': [50,100,125], 'max_depth': [3,4,5]}
+    ]
+    #param_grid = [
+        #   {'n_estimators': [750], 'max_depth': [2], 'min_samples_split': [2]},
+    #]
+    scoring = {'AUC': 'roc_auc', 'Accuracy': make_scorer(accuracy_score)}
+    clf = GridSearchCV(XGBClassifier(),param_grid,cv=5,scoring=scoring,refit='AUC',n_jobs=3,verbose=1)
+    clf.fit(X,Y)
+    return clf
 def train_xgb():
 
     train_df, test_df = get_dataset('lda')
